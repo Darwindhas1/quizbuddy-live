@@ -312,16 +312,45 @@ async function updateQuiz(quiz){
   await sSet('quiz-index', updated);
 }
 async function loadQuiz(id){ return await sGet('quiz-'+id); }
-async function seedSampleQuizzes(){
+/* Seeding talks to window.storage directly instead of sGet/sSet — those
+   helpers swallow errors, which made seeding failures invisible.
+   Returns {ok, added, error} so callers can surface the real reason. */
+async function runSeedSampleQuizzes(){
   const samples = window.SAMPLE_QUIZZES || [];
-  if(!samples.length) return;
-  const idx = await loadQuizIndex();
-  const have = new Set(idx.map(q=>q.id));
-  const missing = samples.filter(s=>!have.has(s.id));
-  if(!missing.length) return;
-  for(const s of missing){ await sSet('quiz-'+s.id, s); }
-  const merged = idx.concat(missing.map(s=>({id:s.id, title:s.title, count:s.questions.length})));
-  await sSet('quiz-index', merged);
+  console.log('[QuizBuddy] seed: starting,', samples.length, 'sample quizzes available');
+  if(!samples.length) return {ok:false, added:0, error:'sample-quizzes.js did not load — window.SAMPLE_QUIZZES is empty.'};
+  if(typeof window.storage === 'undefined'){
+    const msg = 'window.storage is not available in this environment, so nothing can be saved. That API only exists inside the claude.ai artifact sandbox — the app needs a real backend (planned Supabase migration) to store quizzes anywhere else.';
+    console.error('[QuizBuddy] seed failed:', msg);
+    return {ok:false, added:0, error:msg};
+  }
+  try{
+    const idxRaw = await window.storage.get('quiz-index', true);
+    const idx = idxRaw ? JSON.parse(idxRaw.value) : [];
+    const have = new Set(idx.map(q=>q.id));
+    const missing = samples.filter(s=>!have.has(s.id));
+    console.log('[QuizBuddy] seed:', idx.length, 'already in index,', missing.length, 'to add');
+    if(!missing.length) return {ok:true, added:0};
+    for(const s of missing){
+      await window.storage.set('quiz-'+s.id, JSON.stringify(s), true);
+    }
+    const merged = idx.concat(missing.map(s=>({id:s.id, title:s.title, count:s.questions.length})));
+    await window.storage.set('quiz-index', JSON.stringify(merged), true);
+    const check = await window.storage.get('quiz-index', true);
+    const checkLen = check ? JSON.parse(check.value).length : 0;
+    if(checkLen < merged.length){
+      return {ok:false, added:0, error:'Writes did not persist — read-back found '+checkLen+' of '+merged.length+' index entries.'};
+    }
+    console.log('[QuizBuddy] seed: done, added', missing.length);
+    return {ok:true, added:missing.length};
+  }catch(e){
+    console.error('[QuizBuddy] seed failed:', e);
+    return {ok:false, added:0, error:(e && e.message) ? e.message : String(e)};
+  }
+}
+async function seedSampleQuizzes(){
+  const res = await runSeedSampleQuizzes();
+  if(!res.ok) console.error('[QuizBuddy] auto-seed did not complete:', res.error);
 }
 
 async function createGame(quizId){
@@ -491,7 +520,12 @@ function discoverHTML(){
   `;
 }
 function discoverRecentHTML(){
-  if(!App.quizzes.length) return '<div class="card" style="text-align:center;"><p style="font-weight:700;color:var(--ink-soft);margin:0;">No quizzes yet. Create your first one to get started!</p></div>';
+  if(!App.quizzes.length) return `
+    <div class="card" style="text-align:center;">
+      <p style="font-weight:700;color:var(--ink-soft);margin:0 0 12px;">No quizzes yet. Seed the built-in samples, or create your own with "+ Create a quiz".</p>
+      <button class="btn btn-yellow" id="seedSamplesBtn">Seed sample quizzes</button>
+      <div id="seedStatus" style="font-weight:700;font-size:14px;min-height:18px;margin-top:10px;"></div>
+    </div>`;
   const list = filteredQuizzes();
   if(!list.length) return `<div class="card" style="text-align:center;"><p style="font-weight:700;color:var(--ink-soft);margin:0;">No quizzes match "${esc(App.discoverFilter)}".</p></div>`;
   return `<div class="quiz-list">${list.map(q=>{
@@ -828,6 +862,28 @@ function bindEvents(){
       if(box){ box.innerHTML = discoverRecentHTML(); bindQuizButtons(box); }
     });
   }
+
+  /* discover explicit seeding */
+  on('seedSamplesBtn', 'click', async ()=>{
+    const btn = document.getElementById('seedSamplesBtn');
+    const status = document.getElementById('seedStatus');
+    btn.disabled = true; status.style.color = 'var(--ink-soft)'; status.textContent = 'Seeding...';
+    const res = await runSeedSampleQuizzes();
+    if(res.ok){
+      App.quizzes = await loadQuizIndex();
+      App.hostCounts = (await sGet('host-counts')) || {};
+      render();
+      const banner = document.createElement('div');
+      banner.className = 'feedback-banner ok';
+      banner.textContent = res.added ? '✓ Added '+res.added+' sample quiz'+(res.added===1?'':'zes') : '✓ Sample quizzes already present';
+      document.body.appendChild(banner);
+      setTimeout(()=>{ banner.remove(); }, 2200);
+    } else {
+      btn.disabled = false;
+      status.style.color = 'var(--red-dark)';
+      status.textContent = '✗ ' + res.error;
+    }
+  });
 
   /* discover quick host */
   on('quickHostBtn', 'click', ()=>{
