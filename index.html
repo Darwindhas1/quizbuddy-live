@@ -202,6 +202,7 @@
 
 <div id="app"></div>
 
+<script src="src/sample-quizzes.js"></script>
 <script>
 /* ---------------- storage helpers ---------------- */
 async function sGet(key){
@@ -266,6 +267,17 @@ async function updateQuiz(quiz){
   await sSet('quiz-index', updated);
 }
 async function loadQuiz(id){ return await sGet('quiz-'+id); }
+async function seedSampleQuizzes(){
+  const samples = window.SAMPLE_QUIZZES || [];
+  if(!samples.length) return;
+  const idx = await loadQuizIndex();
+  const have = new Set(idx.map(q=>q.id));
+  const missing = samples.filter(s=>!have.has(s.id));
+  if(!missing.length) return;
+  for(const s of missing){ await sSet('quiz-'+s.id, s); }
+  const merged = idx.concat(missing.map(s=>({id:s.id, title:s.title, count:s.questions.length})));
+  await sSet('quiz-index', merged);
+}
 
 async function createGame(quizId){
   let code = genCode();
@@ -360,6 +372,7 @@ function landingHTML(){
 /* ---------------- TEACHER DASHBOARD ---------------- */
 async function openTeacherDashboard(){
   App.loading = true; goto('teacherDashboard');
+  await seedSampleQuizzes();
   App.quizzes = await loadQuizIndex();
   App.loading = false; render();
 }
