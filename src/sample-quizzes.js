@@ -70,5 +70,33 @@ window.SAMPLE_QUIZZES = [
       { text: 'What currency is used in Malaysia?', options: ['Baht', 'Ringgit', 'Peso', 'Dollar'], correct: 1 },
       { text: 'Which sea separates Peninsular Malaysia from Borneo?', options: ['Red Sea', 'South China Sea', 'Arabian Sea', 'Baltic Sea'], correct: 1 }
     ]
+  },
+  {
+    id: 'quiz-science-basics',
+    title: 'Science Basics',
+    questions: [
+      { text: 'What gas do humans breathe in to survive?', options: ['Carbon Dioxide', 'Oxygen', 'Nitrogen', 'Helium'], correct: 1 },
+      { text: 'Which planet is closest to the sun?', options: ['Venus', 'Earth', 'Mercury', 'Mars'], correct: 2 },
+      { text: 'What do plants need most to make their own food?', options: ['Sunlight', 'Moonlight', 'Sand', 'Ice'], correct: 0 },
+      { text: 'Water is made up of hydrogen and what other gas?', options: ['Carbon', 'Oxygen', 'Nitrogen', 'Helium'], correct: 1 },
+      { text: 'Which body part pumps blood around your body?', options: ['Lungs', 'Brain', 'Heart', 'Stomach'], correct: 2 },
+      { text: 'What do we call animals that only eat plants?', options: ['Carnivores', 'Herbivores', 'Omnivores', 'Predators'], correct: 1 },
+      { text: 'What is the largest organ in the human body?', options: ['Heart', 'Liver', 'Skin', 'Brain'], correct: 2 },
+      { text: 'How many legs does an insect have?', options: ['4', '6', '8', '10'], correct: 1 }
+    ]
+  },
+  {
+    id: 'quiz-money-time',
+    title: 'Money and Time',
+    questions: [
+      { text: 'How many sen make up RM1?', options: ['10', '50', '100', '1000'], correct: 2 },
+      { text: 'If you have RM5 and spend RM2, how much is left?', options: ['RM1', 'RM2', 'RM3', 'RM4'], correct: 2 },
+      { text: 'How many minutes are in one hour?', options: ['30', '45', '60', '100'], correct: 2 },
+      { text: 'If it is 3:00 now, what time will it be in 30 minutes?', options: ['3:15', '3:30', '4:00', '3:45'], correct: 1 },
+      { text: 'How many hours are in one day?', options: ['12', '20', '24', '30'], correct: 2 },
+      { text: 'What do we call the coins and notes used in Malaysia?', options: ['Dollar', 'Ringgit', 'Peso', 'Rupee'], correct: 1 },
+      { text: 'A toy costs RM8 and you pay with RM10, how much change do you get?', options: ['RM1', 'RM2', 'RM3', 'RM4'], correct: 1 },
+      { text: 'How many days are in one week?', options: ['5', '6', '7', '8'], correct: 2 }
+    ]
   }
 ];
