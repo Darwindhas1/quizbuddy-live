@@ -84,15 +84,54 @@
   .hero-title{font-size:52px;font-weight:700;margin:0;line-height:1.05;}
   .hero-title span{color:var(--orange);}
   .hero-sub{font-size:18px;color:var(--ink-soft);max-width:480px;margin:0;font-weight:600;}
-  .role-row{display:flex;gap:18px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
-  .role-card{
-    width:220px;background:var(--white);border-radius:18px;padding:26px 20px;border:3px solid #F3EAD9;
-    display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .15s ease, border-color .15s ease;
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .points-pill{background:#FFE7D3;color:var(--orange-dark);border-radius:999px;padding:8px 16px;font-weight:800;font-size:14px;}
+
+  /* landing hero join pill */
+  .hero-join{
+    display:flex;align-items:center;gap:8px;background:var(--white);border:3px solid #F0E4CE;border-radius:999px;
+    padding:8px 8px 8px 24px;width:100%;max-width:460px;box-shadow:0 10px 30px rgba(36,28,61,.08);
   }
-  .role-card:hover{transform:translateY(-4px);border-color:var(--orange);}
-  .role-emoji{font-size:40px;}
-  .role-card h3{margin:0;font-size:19px;}
-  .role-card p{margin:0;font-size:13px;color:var(--ink-soft);font-weight:600;}
+  .hero-join:focus-within{border-color:var(--orange);}
+  .hero-join input{
+    flex:1;min-width:0;border:none;outline:none;background:transparent;color:var(--ink);
+    font-size:20px;font-weight:600;font-family:'Fredoka',sans-serif;letter-spacing:3px;
+  }
+  .hero-join input::placeholder{letter-spacing:0;font-family:'Nunito',sans-serif;font-weight:700;color:var(--ink-soft);opacity:.75;font-size:16px;}
+  .hero-join .btn{border-radius:999px;}
+
+  /* section headers + card carousels */
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin:28px 0 14px;gap:10px;}
+  .section-head h2{margin:0;}
+  .carousel{display:flex;gap:14px;overflow-x:auto;padding:4px 4px 16px;scroll-snap-type:x mandatory;}
+  .carousel-card{
+    min-width:190px;max-width:190px;background:var(--white);border:2px solid #F3EAD9;border-radius:16px;
+    overflow:hidden;scroll-snap-align:start;display:flex;flex-direction:column;
+  }
+  .carousel-thumb{height:92px;position:relative;flex-shrink:0;}
+  .q-badge{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;color:var(--ink);}
+  .carousel-title{padding:10px 12px;font-weight:800;font-size:15px;flex:1;}
+
+  /* teacher nav */
+  .teacher-nav{gap:14px;flex-wrap:wrap;}
+  .nav-search{
+    border:2px solid #F0E4CE;border-radius:999px;padding:10px 18px;font-size:14px;font-family:'Nunito',sans-serif;
+    background:var(--white);color:var(--ink);flex:1;min-width:140px;max-width:280px;
+  }
+  .nav-search:focus{outline:none;border-color:var(--orange);}
+  .nav-tabs{display:flex;gap:4px;background:var(--cream-2);border-radius:999px;padding:4px;}
+  .nav-tab{border:none;background:transparent;border-radius:999px;padding:8px 16px;font-weight:800;font-size:14px;color:var(--ink-soft);}
+  .nav-tab.active{background:var(--white);color:var(--ink);box-shadow:0 1px 4px rgba(36,28,61,.12);}
+
+  /* discover hero cards */
+  .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;}
+  @media (max-width:700px){.hero-cards{grid-template-columns:1fr;}}
+  .greeting-card{background:linear-gradient(135deg,var(--orange),#FFA05C);border:none;color:var(--white);}
+  .greeting-card h3{margin:0 0 6px;}
+  .mini-stats{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+  .mini-stat{background:rgba(255,255,255,.2);border-radius:14px;padding:10px 18px;}
+  .mini-stat .num{font-family:'Fredoka',sans-serif;font-size:24px;font-weight:700;}
+  .mini-stat .lbl{font-size:12px;font-weight:700;opacity:.92;}
 
   /* code tiles */
   .code-tiles{display:flex;gap:10px;justify-content:center;}
@@ -239,7 +278,13 @@ const App = {
   countdownTimer:null,
   timeLeft:15,
   loading:false,
-  error:''
+  error:'',
+  sessionPoints:0,
+  hasHosted:false,
+  discoverFilter:'',
+  hostCounts:{},
+  landingQuizzes:null,
+  heroCode:''
 };
 const QUESTION_SECONDS = 15;
 
@@ -325,13 +370,30 @@ function render(){
   bindEvents();
 }
 function topbarHTML(){
-  if(App.screen==='landing') return '';
-  return '<div class="topbar"><div class="logo" id="logoHome"><span class="dot"></span>QuizBuddy</div></div>';
+  if(['discover','teacherDashboard','reports'].includes(App.screen)) return teacherNavHTML();
+  const right = [];
+  if(App.playerName) right.push(`<span class="points-pill">⭐ ${App.sessionPoints} pts</span>`);
+  if(App.hasHosted) right.push('<button class="btn btn-ghost" id="navMyQuizzes">My quizzes</button>');
+  return `<div class="topbar"><div class="logo" id="logoHome"><span class="dot"></span>QuizBuddy</div><div class="topbar-right">${right.join('')}</div></div>`;
+}
+function teacherNavHTML(){
+  const tab = (id,label,screen)=>`<button class="nav-tab ${App.screen===screen?'active':''}" id="${id}">${label}</button>`;
+  const search = App.screen==='discover'
+    ? `<input type="text" class="nav-search" id="discoverSearch" placeholder="Find a quiz" aria-label="Find a quiz" value="${esc(App.discoverFilter)}">`
+    : '';
+  return `<div class="topbar teacher-nav">
+    <div class="logo" id="logoHome"><span class="dot"></span>QuizBuddy</div>
+    ${search}
+    <div class="nav-tabs">${tab('navTabHome','Home','discover')}${tab('navTabMy','My quizzes','teacherDashboard')}${tab('navTabReports','Reports','reports')}</div>
+    <button class="btn btn-primary" id="navCreateQuiz">+ Create a quiz</button>
+  </div>`;
 }
 
 function screenHTML(){
   switch(App.screen){
     case 'landing': return landingHTML();
+    case 'discover': return discoverHTML();
+    case 'reports': return reportsHTML();
     case 'teacherDashboard': return teacherDashboardHTML();
     case 'quizEditor': return quizEditorHTML();
     case 'hostLobby': return hostLobbyHTML();
@@ -348,23 +410,123 @@ function screenHTML(){
 /* ---------------- LANDING ---------------- */
 function landingHTML(){
   return `
-    <div class="center-screen">
+    <div class="center-screen" style="flex:0 0 auto;padding:26px 0 6px;">
       <div class="logo" style="font-size:26px;"><span class="dot"></span>QuizBuddy</div>
       <h1 class="hero-title">Learning that feels<br><span>like play</span> 🎉</h1>
       <p class="hero-sub">Teachers host a live quiz, kids join instantly with a 6&#8209;digit code, no accounts needed.</p>
-      <div class="role-row">
-        <div class="role-card" id="goPlayer">
-          <div class="role-emoji">🎮</div>
-          <h3>I'm a player</h3>
-          <p>Join a game with a code</p>
+      <div class="hero-join">
+        <input type="text" id="heroCodeInput" inputmode="numeric" maxlength="6" placeholder="Enter a join code" aria-label="Enter a join code">
+        <button class="btn btn-primary btn-lg" id="heroJoinBtn">Join</button>
+      </div>
+      <button class="small-link" id="goTeacher">🍎 Hosting a game? Go to Discover</button>
+      <p class="helper-note">Quizzes and games are stored in shared app storage, visible to anyone using this app, so please skip real personal info in names.</p>
+    </div>
+    <div class="section-head">
+      <h2>Available quizzes</h2>
+      <button class="small-link" id="seeAllQuizzes">See all →</button>
+    </div>
+    <div id="carouselBox">${carouselHTML()}</div>
+  `;
+}
+const THUMB_COLORS = ['var(--orange)','var(--yellow)','var(--grape)','var(--green)'];
+function carouselHTML(){
+  if(App.landingQuizzes === null) return '<p class="helper-note">Loading quizzes...</p>';
+  if(!App.landingQuizzes.length) return '<div class="card" style="text-align:center;"><p style="font-weight:700;color:var(--ink-soft);margin:0;">No quizzes here yet — a teacher can create the first one in Discover! 🌱</p></div>';
+  return `<div class="carousel">${App.landingQuizzes.map((q,i)=>`
+    <div class="carousel-card">
+      <div class="carousel-thumb" style="background:${THUMB_COLORS[i%THUMB_COLORS.length]};"><span class="q-badge">${q.count} Q${q.count===1?'':'s'}</span></div>
+      <div class="carousel-title">${esc(q.title)}</div>
+    </div>`).join('')}</div>`;
+}
+async function refreshLandingCarousel(){
+  App.landingQuizzes = await loadQuizIndex();
+  if(App.screen==='landing'){
+    const box = document.getElementById('carouselBox');
+    if(box) box.innerHTML = carouselHTML();
+  }
+}
+
+/* ---------------- DISCOVER (teacher hub) ---------------- */
+async function openDiscover(){
+  App.loading = true; App.discoverFilter = ''; goto('discover');
+  await seedSampleQuizzes();
+  App.quizzes = await loadQuizIndex();
+  App.hostCounts = (await sGet('host-counts')) || {};
+  App.loading = false; render();
+}
+function filteredQuizzes(){
+  const f = (App.discoverFilter||'').trim().toLowerCase();
+  return f ? App.quizzes.filter(q=>(q.title||'').toLowerCase().includes(f)) : App.quizzes;
+}
+function discoverHTML(){
+  if(App.loading){ return loadingHTML('Setting up Discover...'); }
+  const totalHosted = Object.values(App.hostCounts).reduce((a,b)=>a+b,0);
+  const options = App.quizzes.map(q=>`<option value="${esc(q.id)}">${esc(q.title)}</option>`).join('');
+  return `
+    <div class="hero-cards">
+      <div class="card">
+        <h3 style="margin:0 0 6px;">🚀 Host a game</h3>
+        <p class="helper-note" style="margin:0 0 12px;">Pick a quiz and jump straight into the lobby.</p>
+        ${App.quizzes.length ? `
+        <div class="field" style="margin-bottom:12px;">
+          <label>Quiz</label>
+          <select id="quickHostSelect">${options}</select>
         </div>
-        <div class="role-card" id="goTeacher">
-          <div class="role-emoji">🍎</div>
-          <h3>I'm a teacher</h3>
-          <p>Create and host quizzes</p>
+        <button class="btn btn-green btn-block" id="quickHostBtn">Host now</button>`
+        : '<p class="helper-note">No quizzes yet — create one first with "+ Create a quiz".</p>'}
+      </div>
+      <div class="card greeting-card">
+        <h3>Hello, teacher 👋</h3>
+        <p style="margin:0;font-weight:700;opacity:.95;">Welcome to your QuizBuddy hub.</p>
+        <div class="mini-stats">
+          <div class="mini-stat"><div class="num">${App.quizzes.length}</div><div class="lbl">Quizzes</div></div>
+          <div class="mini-stat"><div class="num">${totalHosted}</div><div class="lbl">Games hosted</div></div>
         </div>
       </div>
-      <p class="helper-note">Quizzes and games are stored in shared app storage, visible to anyone using this app, so please skip real personal info in names.</p>
+    </div>
+    <div class="section-head"><h2>Recent activity</h2></div>
+    <div id="recentBox">${discoverRecentHTML()}</div>
+    <div class="section-head"><h2>Templates</h2></div>
+    <div id="templatesBox">${discoverTemplatesHTML()}</div>
+  `;
+}
+function discoverRecentHTML(){
+  if(!App.quizzes.length) return '<div class="card" style="text-align:center;"><p style="font-weight:700;color:var(--ink-soft);margin:0;">No quizzes yet. Create your first one to get started!</p></div>';
+  const list = filteredQuizzes();
+  if(!list.length) return `<div class="card" style="text-align:center;"><p style="font-weight:700;color:var(--ink-soft);margin:0;">No quizzes match "${esc(App.discoverFilter)}".</p></div>`;
+  return `<div class="quiz-list">${list.map(q=>{
+    const hosted = App.hostCounts[q.id]||0;
+    return `
+      <div class="quiz-card">
+        <div class="stripe"></div>
+        <h3>${esc(q.title)}</h3>
+        <div class="meta">${q.count} question${q.count===1?'':'s'} · ${hosted ? 'Hosted '+hosted+' time'+(hosted===1?'':'s') : 'Not hosted yet'}</div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn btn-primary" data-host="${esc(q.id)}" style="flex:1;">Host game</button>
+          <button class="btn btn-ghost" data-edit="${esc(q.id)}">Edit</button>
+        </div>
+      </div>`;}).join('')}</div>`;
+}
+function discoverTemplatesHTML(){
+  const samples = window.SAMPLE_QUIZZES || [];
+  const have = new Map(App.quizzes.map(q=>[q.id,q]));
+  const avail = samples.filter(s=>have.has(s.id));
+  if(!avail.length) return '<div class="card"><p class="helper-note" style="margin:0;">Starter templates haven\'t been seeded in this environment yet — use "+ Create a quiz" to make your own.</p></div>';
+  return `<div class="carousel">${avail.map((s,i)=>`
+    <div class="carousel-card">
+      <div class="carousel-thumb" style="background:${THUMB_COLORS[i%THUMB_COLORS.length]};"><span class="q-badge">${have.get(s.id).count} Qs</span></div>
+      <div class="carousel-title">${esc(s.title)}</div>
+      <button class="btn btn-yellow" data-host="${esc(s.id)}" style="margin:0 12px 12px;">Use this quiz</button>
+    </div>`).join('')}</div>`;
+}
+
+/* ---------------- REPORTS (placeholder) ---------------- */
+function reportsHTML(){
+  return `
+    <div class="center-screen">
+      <div style="font-size:44px;">📊</div>
+      <h2 style="margin:0;">Reports — coming soon</h2>
+      <p class="helper-note">Once game results are tracked over time, class reports will live here.</p>
     </div>
   `;
 }
@@ -447,6 +609,11 @@ async function startHosting(quizId){
   App.loading = true; goto('hostLobby');
   App.quizForGame = await loadQuiz(quizId);
   App.gameCode = await createGame(quizId);
+  App.hasHosted = true;
+  const counts = (await sGet('host-counts')) || {};
+  counts[quizId] = (counts[quizId]||0) + 1;
+  await sSet('host-counts', counts);
+  App.hostCounts = counts;
   App.players = [];
   App.loading = false;
   render();
@@ -533,7 +700,7 @@ function hostResultsHTML(){
     <div class="center-screen">
       <h1 class="hero-title">🏆 Final scores</h1>
       ${leaderboardHTML(App.players)}
-      <button class="btn btn-primary btn-lg" id="backToDashFromResults">Back to my quizzes</button>
+      <button class="btn btn-primary btn-lg" id="backToDashFromResults">Back to Discover</button>
     </div>
   `;
 }
@@ -554,7 +721,7 @@ function playerJoinHTML(){
     <div class="center-screen">
       <h1 class="hero-title">Enter your <span>game code</span></h1>
       <div class="code-tiles">
-        ${[0,1,2,3,4,5].map(i=>`<input type="text" maxlength="1" inputmode="numeric" class="codeDigit" data-i="${i}">`).join('')}
+        ${[0,1,2,3,4,5].map(i=>`<input type="text" maxlength="1" inputmode="numeric" class="codeDigit" data-i="${i}" value="${esc((App.heroCode||'')[i]||'')}">`).join('')}
       </div>
       <div class="field" style="width:260px;">
         <label>Your nickname</label>
@@ -622,19 +789,55 @@ function loadingHTML(msg){
 }
 
 /* ---------------- events ---------------- */
+function bindQuizButtons(root){
+  root.querySelectorAll('[data-host]').forEach(b=>b.addEventListener('click', ()=> startHosting(b.dataset.host)));
+  root.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
+    const q = await loadQuiz(b.dataset.edit); q.savedOnce = true; App.editingQuiz = q; goto('quizEditor');
+  }));
+}
 function bindEvents(){
   const on = (id, evt, fn) => { const e = document.getElementById(id); if(e) e.addEventListener(evt, fn); };
 
-  on('logoHome', 'click', ()=>{ App.gameCode=null; App.game=null; goto('landing'); });
-  on('goPlayer', 'click', ()=> goto('playerJoin'));
-  on('goTeacher', 'click', openTeacherDashboard);
+  on('logoHome', 'click', ()=>{ App.gameCode=null; App.game=null; goto('landing'); refreshLandingCarousel(); });
+  on('goTeacher', 'click', openDiscover);
+
+  /* landing hero join */
+  const heroInput = document.getElementById('heroCodeInput');
+  if(heroInput){
+    heroInput.addEventListener('input', ()=>{ heroInput.value = heroInput.value.replace(/[^0-9]/g,'').slice(0,6); });
+    heroInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ const b = document.getElementById('heroJoinBtn'); if(b) b.click(); } });
+  }
+  on('heroJoinBtn', 'click', ()=>{
+    App.heroCode = heroInput ? heroInput.value : '';
+    goto('playerJoin');
+    if(App.heroCode.length===6){ const nick = document.getElementById('nickname'); if(nick) nick.focus(); }
+  });
+  on('seeAllQuizzes', 'click', openDiscover);
+  on('navMyQuizzes', 'click', openDiscover);
+
+  /* teacher nav */
+  on('navTabHome', 'click', openDiscover);
+  on('navTabMy', 'click', openTeacherDashboard);
+  on('navTabReports', 'click', ()=> goto('reports'));
+  on('navCreateQuiz', 'click', ()=>{ App.editingQuiz = newQuizDraft(); goto('quizEditor'); });
+  const searchInput = document.getElementById('discoverSearch');
+  if(searchInput){
+    searchInput.addEventListener('input', ()=>{
+      App.discoverFilter = searchInput.value;
+      const box = document.getElementById('recentBox');
+      if(box){ box.innerHTML = discoverRecentHTML(); bindQuizButtons(box); }
+    });
+  }
+
+  /* discover quick host */
+  on('quickHostBtn', 'click', ()=>{
+    const sel = document.getElementById('quickHostSelect');
+    if(sel && sel.value) startHosting(sel.value);
+  });
 
   /* teacher dashboard */
   on('newQuiz', 'click', ()=>{ App.editingQuiz = newQuizDraft(); goto('quizEditor'); });
-  document.querySelectorAll('[data-host]').forEach(b=>b.addEventListener('click', ()=> startHosting(b.dataset.host)));
-  document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
-    const q = await loadQuiz(b.dataset.edit); q.savedOnce = true; App.editingQuiz = q; goto('quizEditor');
-  }));
+  bindQuizButtons(document);
 
   /* quiz editor */
   on('backToDash', 'click', openTeacherDashboard);
@@ -664,7 +867,7 @@ function bindEvents(){
   });
 
   /* host lobby */
-  on('cancelHost', 'click', openTeacherDashboard);
+  on('cancelHost', 'click', openDiscover);
   on('startGame', 'click', async ()=>{
     App.game = await setGame(App.gameCode, {status:'question', currentQ:0, questionStartedAt:Date.now()});
     goto('hostPlay');
@@ -677,7 +880,7 @@ function bindEvents(){
     await hostAdvance();
     if(wasLast){ await hostShowResults(); }
   });
-  on('backToDashFromResults', 'click', openTeacherDashboard);
+  on('backToDashFromResults', 'click', openDiscover);
 
   /* player join code tiles */
   const digits = document.querySelectorAll('.codeDigit');
@@ -696,7 +899,7 @@ function bindEvents(){
   document.querySelectorAll('.answer-card[data-opt]').forEach(b=>b.addEventListener('click', ()=> playerAnswer(parseInt(b.dataset.opt,10))));
 
   /* player results */
-  on('playAgain', 'click', ()=>{ App.gameCode=null; App.game=null; App.players=[]; App.playerName=''; goto('playerJoin'); });
+  on('playAgain', 'click', ()=>{ App.gameCode=null; App.game=null; App.players=[]; App.playerName=''; App.heroCode=''; goto('playerJoin'); });
 
   startTimerVisualsIfNeeded();
 }
@@ -758,6 +961,7 @@ async function playerAnswer(optIndex){
   const newStreak = isCorrect ? (cur.streak||0) + 1 : 0;
   const speedBonus = App.timeLeft && App.timeLeft > 0 ? Math.round((App.timeLeft / QUESTION_SECONDS) * 400) : 0;
   const gained = isCorrect ? (600 + speedBonus + Math.min(newStreak * 40, 200)) : 0;
+  App.sessionPoints += gained;
   await updatePlayerScore(App.gameCode, App.playerId, {score:(cur.score||0)+gained, streak:newStreak, name:App.playerName});
 
   document.querySelectorAll('.answer-card[data-opt]').forEach(b=>{
@@ -790,6 +994,7 @@ function startTimerVisualsIfNeeded(){
 }
 
 render();
+refreshLandingCarousel();
 </script>
 </body>
 </html>
