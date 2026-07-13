@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizBuddy - Live Learning Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8ED;
+    --cream-2:#FFF1DC;
+    --orange:#FF7A29;
+    --orange-dark:#E8621A;
+    --yellow:#FFC93C;
+    --grape:#7C3AED;
+    --berry:#D63384;
+    --green:#2ECC71;
+    --green-dark:#1E9E5A;
+    --red:#FF4E4E;
+    --red-dark:#D93636;
+    --ink:#241C3D;
+    --ink-soft:#5C5270;
+    --white:#FFFFFF;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Nunito',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  h1,h2,h3,.display{font-family:'Fredoka',sans-serif;}
+  button{font-family:'Nunito',sans-serif;cursor:pointer;}
+  .blob{
+    position:fixed;
+    border-radius:50%;
+    filter:blur(2px);
+    opacity:.35;
+    z-index:0;
+    pointer-events:none;
+    animation:float 9s ease-in-out infinite;
+  }
+  @keyframes float{
+    0%,100%{transform:translateY(0px) translateX(0px);}
+    50%{transform:translateY(-22px) translateX(14px);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .blob{animation:none;}
+    *{animation-duration:.01ms !important; transition-duration:.01ms !important;}
+  }
+  #app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;}
+  .wrap{max-width:1000px;margin:0 auto;width:100%;padding:24px;flex:1;display:flex;flex-direction:column;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;position:relative;z-index:2;}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Fredoka',sans-serif;font-weight:700;font-size:22px;color:var(--ink);cursor:pointer;}
+  .logo .dot{width:14px;height:14px;background:var(--orange);border-radius:50%;display:inline-block;box-shadow:5px 0 0 var(--yellow), -5px 0 0 var(--grape);margin-right:6px;}
+  .btn{
+    border:none;border-radius:14px;padding:12px 22px;font-weight:700;font-size:15px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn-primary{background:var(--orange);color:var(--white);box-shadow:0 4px 0 var(--orange-dark);}
+  .btn-primary:hover{filter:brightness(1.04);}
+  .btn-primary:active{box-shadow:0 1px 0 var(--orange-dark);transform:translateY(3px) scale(.98);}
+  .btn-ghost{background:var(--white);color:var(--ink);border:2px solid #EFE6D6;}
+  .btn-ghost:hover{border-color:var(--orange);}
+  .btn-yellow{background:var(--yellow);color:var(--ink);box-shadow:0 4px 0 #D9A61E;}
+  .btn-yellow:active{box-shadow:0 1px 0 #D9A61E;transform:translateY(3px) scale(.98);}
+  .btn-green{background:var(--green);color:var(--white);box-shadow:0 4px 0 var(--green-dark);}
+  .btn-green:active{box-shadow:0 1px 0 var(--green-dark);transform:translateY(3px) scale(.98);}
+  .btn-block{width:100%;}
+  .btn-lg{padding:16px 28px;font-size:18px;border-radius:16px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .card{background:var(--white);border-radius:var(--radius);padding:28px;border:2px solid #F3EAD9;}
+  .center-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;}
+
+  /* landing */
+  .hero-title{font-size:52px;font-weight:700;margin:0;line-height:1.05;}
+  .hero-title span{color:var(--orange);}
+  .hero-sub{font-size:18px;color:var(--ink-soft);max-width:480px;margin:0;font-weight:600;}
+  .role-row{display:flex;gap:18px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
+  .role-card{
+    width:220px;background:var(--white);border-radius:18px;padding:26px 20px;border:3px solid #F3EAD9;
+    display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .15s ease, border-color .15s ease;
+  }
+  .role-card:hover{transform:translateY(-4px);border-color:var(--orange);}
+  .role-emoji{font-size:40px;}
+  .role-card h3{margin:0;font-size:19px;}
+  .role-card p{margin:0;font-size:13px;color:var(--ink-soft);font-weight:600;}
+
+  /* code tiles */
+  .code-tiles{display:flex;gap:10px;justify-content:center;}
+  .code-tiles input{
+    width:52px;height:64px;text-align:center;font-size:30px;font-weight:700;font-family:'Fredoka',sans-serif;
+    border:3px solid #F0E4CE;border-radius:14px;background:var(--cream-2);color:var(--ink);
+  }
+  .code-tiles input:focus{outline:none;border-color:var(--orange);background:var(--white);}
+  @media (max-width:480px){
+    .code-tiles input{width:38px;height:50px;font-size:22px;}
+    .hero-title{font-size:36px;}
+  }
+
+  .field{display:flex;flex-direction:column;gap:6px;text-align:left;margin-bottom:16px;}
+  .field label{font-size:13px;font-weight:700;color:var(--ink-soft);}
+  .field input, .field select, .field textarea{
+    border:2px solid #F0E4CE;border-radius:12px;padding:12px 14px;font-size:16px;font-family:'Nunito',sans-serif;
+    background:var(--cream-2);color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--orange);background:var(--white);}
+
+  .top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .badge{background:var(--cream-2);border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;color:var(--ink-soft);}
+  .badge.orange{background:#FFE7D3;color:var(--orange-dark);}
+
+  .quiz-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+  .quiz-card{background:var(--white);border:2px solid #F3EAD9;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;}
+  .quiz-card h3{margin:0;font-size:18px;}
+  .quiz-card .meta{font-size:13px;color:var(--ink-soft);font-weight:700;}
+  .stripe{height:8px;border-radius:6px;background:linear-gradient(90deg,var(--orange),var(--yellow));}
+
+  .qbox{border:2px solid #F0E4CE;border-radius:16px;padding:16px;margin-bottom:12px;background:var(--cream-2);}
+  .qbox-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .opt-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .opt-row input[type=text]{flex:1;}
+  .opt-row input[type=radio]{width:20px;height:20px;accent-color:var(--green);}
+  .icon-btn{background:none;border:none;color:var(--red);font-weight:700;font-size:13px;}
+
+  /* game code display */
+  .code-display{display:flex;gap:12px;justify-content:center;margin:10px 0;flex-wrap:wrap;}
+  .code-display .digit{
+    width:64px;height:80px;background:var(--white);border:3px solid var(--orange);border-radius:16px;
+    display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:700;font-family:'Fredoka',sans-serif;
+    color:var(--orange-dark);
+  }
+
+  .player-chip{background:var(--white);border:2px solid #F3EAD9;border-radius:999px;padding:8px 16px;font-weight:700;display:inline-flex;align-items:center;gap:8px;}
+  .player-list{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:18px 0;}
+
+  /* progress pill */
+  .progress-pill{background:var(--ink);color:var(--white);border-radius:999px;padding:6px 18px;font-weight:700;font-size:13px;display:inline-block;margin-bottom:-16px;position:relative;z-index:2;}
+  .question-banner{background:var(--white);border-radius:18px;padding:34px 24px 22px;text-align:center;border:2px solid #F3EAD9;}
+  .question-text{font-size:26px;font-weight:700;font-family:'Fredoka',sans-serif;margin:0;}
+  .timer-bar-track{height:10px;background:#F0E4CE;border-radius:6px;overflow:hidden;margin-top:16px;}
+  .timer-bar-fill{height:100%;background:var(--orange);border-radius:6px;transition:width 1s linear;}
+
+  .answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px;}
+  @media (max-width:600px){.answer-grid{grid-template-columns:1fr;}}
+  .answer-card{
+    border:none;border-radius:18px;padding:28px 18px;min-height:110px;color:var(--white);font-size:19px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;text-align:center;transition:transform .12s ease, opacity .12s ease;
+    font-family:'Fredoka',sans-serif;
+  }
+  .answer-card:active{transform:scale(.97);}
+  .answer-card:disabled{opacity:.5;}
+  .ac-0{background:linear-gradient(135deg,#FF7A29,#E8621A);}
+  .ac-1{background:linear-gradient(135deg,#7C3AED,#5B21B6);}
+  .ac-2{background:linear-gradient(135deg,#2ECC71,#1E9E5A);}
+  .ac-3{background:linear-gradient(135deg,#D63384,#A02460);}
+  .answer-card.correct{background:linear-gradient(135deg,#2ECC71,#1E9E5A) !important;}
+  .answer-card.wrong{background:linear-gradient(135deg,#FF4E4E,#D93636) !important;}
+
+  .feedback-banner{
+    position:fixed;left:0;right:0;bottom:0;padding:22px;text-align:center;font-size:20px;font-weight:700;
+    color:var(--white);z-index:50;
+  }
+  .feedback-banner.ok{background:var(--green);}
+  .feedback-banner.no{background:var(--red);}
+
+  .stat-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:18px 0;}
+  .stat-card{background:var(--white);border:2px solid #F3EAD9;border-radius:16px;padding:16px 22px;text-align:center;min-width:100px;}
+  .stat-card .num{font-size:26px;font-weight:700;font-family:'Fredoka',sans-serif;color:var(--orange-dark);}
+  .stat-card .lbl{font-size:12px;color:var(--ink-soft);font-weight:700;}
+
+  .leaderboard{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;max-width:480px;width:100%;}
+  .lb-row{display:flex;align-items:center;gap:14px;background:var(--white);border:2px solid #F3EAD9;border-radius:14px;padding:12px 18px;}
+  .lb-rank{width:32px;height:32px;border-radius:50%;background:var(--cream-2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+  .lb-rank.gold{background:var(--yellow);}
+  .lb-rank.silver{background:#DADFE6;}
+  .lb-rank.bronze{background:#E7B98B;}
+  .lb-name{flex:1;font-weight:700;text-align:left;}
+  .lb-score{font-weight:700;color:var(--orange-dark);font-family:'Fredoka',sans-serif;}
+
+  .streak-pop{display:inline-flex;align-items:center;gap:4px;background:#FFE7D3;color:var(--orange-dark);padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;}
+  .small-link{background:none;border:none;color:var(--ink-soft);font-weight:700;font-size:14px;text-decoration:underline;}
+  .err{color:var(--red-dark);font-weight:700;font-size:14px;min-height:18px;}
+  .helper-note{font-size:12px;color:var(--ink-soft);font-weight:600;max-width:400px;}
+  .spinner{width:34px;height:34px;border:4px solid #F0E4CE;border-top-color:var(--orange);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="blob" style="width:260px;height:260px;background:var(--orange);top:-60px;left:-60px;"></div>
+<div class="blob" style="width:200px;height:200px;background:var(--yellow);top:20%;right:-70px;animation-delay:2s;"></div>
+<div class="blob" style="width:180px;height:180px;background:var(--grape);bottom:-40px;left:15%;animation-delay:4s;"></div>
+<div class="blob" style="width:150px;height:150px;background:var(--green);bottom:10%;right:10%;animation-delay:1s;"></div>
+
+<div id="app"></div>
+
+<script>
+/* ---------------- storage helpers ---------------- */
+async function sGet(key){
+  try{ const r = await window.storage.get(key, true); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function sSet(key, val){
+  try{ return await window.storage.set(key, JSON.stringify(val), true); }
+  catch(e){ console.error('storage set failed', e); return null; }
+}
+async function sList(prefix){
+  try{ const r = await window.storage.list(prefix, true); return r ? r.keys : []; }
+  catch(e){ return []; }
+}
+function genCode(){ return String(Math.floor(100000 + Math.random()*900000)); }
+function genId(){ return 'p' + Math.random().toString(36).slice(2,10); }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- app state ---------------- */
+const App = {
+  screen:'landing',
+  playerId: genId(),
+  playerName:'',
+  quizzes:[],
+  editingQuiz:null,
+  gameCode:null,
+  game:null,
+  players:[],
+  quizForGame:null,
+  pollTimer:null,
+  answeredThisQ:false,
+  lastCorrect:null,
+  questionDeadline:null,
+  countdownTimer:null,
+  timeLeft:15,
+  loading:false,
+  error:''
+};
+const QUESTION_SECONDS = 15;
+
+function stopPolling(){
+  if(App.pollTimer){ clearInterval(App.pollTimer); App.pollTimer = null; }
+  if(App.countdownTimer){ clearInterval(App.countdownTimer); App.countdownTimer = null; }
+}
+function goto(screen){ stopPolling(); App.error=''; App.screen = screen; render(); }
+
+/* ---------------- data ops ---------------- */
+async function loadQuizIndex(){
+  const idx = await sGet('quiz-index');
+  return idx || [];
+}
+async function saveNewQuiz(quiz){
+  await sSet('quiz-'+quiz.id, quiz);
+  const idx = await loadQuizIndex();
+  idx.unshift({id:quiz.id, title:quiz.title, count:quiz.questions.length});
+  await sSet('quiz-index', idx);
+}
+async function updateQuiz(quiz){
+  await sSet('quiz-'+quiz.id, quiz);
+  const idx = await loadQuizIndex();
+  const updated = idx.map(q => q.id===quiz.id ? {id:quiz.id,title:quiz.title,count:quiz.questions.length} : q);
+  await sSet('quiz-index', updated);
+}
+async function loadQuiz(id){ return await sGet('quiz-'+id); }
+
+async function createGame(quizId){
+  let code = genCode();
+  const state = {quizId, status:'lobby', currentQ:-1, questionStartedAt:null, createdAt:Date.now()};
+  await sSet('game-'+code, state);
+  return code;
+}
+async function getGame(code){ return await sGet('game-'+code); }
+async function setGame(code, patch){
+  const cur = (await getGame(code)) || {};
+  const next = Object.assign({}, cur, patch);
+  await sSet('game-'+code, next);
+  return next;
+}
+async function joinGame(code, playerId, name){
+  await sSet('player-'+code+'-'+playerId, {name, score:0, streak:0, joinedAt:Date.now()});
+}
+async function listPlayers(code){
+  const keys = await sList('player-'+code+'-');
+  const out = [];
+  for(const k of keys){
+    try{ const r = await window.storage.get(k, true); if(r) out.push(Object.assign({id:k}, JSON.parse(r.value))); }
+    catch(e){}
+  }
+  return out.sort((a,b)=>b.score-a.score);
+}
+async function submitAnswer(code, qIndex, playerId, optionIndex){
+  await sSet('ans-'+code+'-'+qIndex+'-'+playerId, {optionIndex, at:Date.now()});
+}
+async function countAnswers(code, qIndex){
+  const keys = await sList('ans-'+code+'-'+qIndex+'-');
+  return keys.length;
+}
+async function updatePlayerScore(code, playerId, patch){
+  const cur = await sGet('player-'+code+'-'+playerId) || {name:App.playerName, score:0, streak:0};
+  const next = Object.assign({}, cur, patch);
+  await sSet('player-'+code+'-'+playerId, next);
+  return next;
+}
+
+/* ---------------- render root ---------------- */
+function render(){
+  const el = document.getElementById('app');
+  el.innerHTML = topbarHTML() + '<div class="wrap">' + screenHTML() + '</div>';
+  bindEvents();
+}
+function topbarHTML(){
+  if(App.screen==='landing') return '';
+  return '<div class="topbar"><div class="logo" id="logoHome"><span class="dot"></span>QuizBuddy</div></div>';
+}
+
+function screenHTML(){
+  switch(App.screen){
+    case 'landing': return landingHTML();
+    case 'teacherDashboard': return teacherDashboardHTML();
+    case 'quizEditor': return quizEditorHTML();
+    case 'hostLobby': return hostLobbyHTML();
+    case 'hostPlay': return hostPlayHTML();
+    case 'hostResults': return hostResultsHTML();
+    case 'playerJoin': return playerJoinHTML();
+    case 'playerLobby': return playerLobbyHTML();
+    case 'playerPlay': return playerPlayHTML();
+    case 'playerResults': return playerResultsHTML();
+    default: return '';
+  }
+}
+
+/* ---------------- LANDING ---------------- */
+function landingHTML(){
+  return `
+    <div class="center-screen">
+      <div class="logo" style="font-size:26px;"><span class="dot"></span>QuizBuddy</div>
+      <h1 class="hero-title">Learning that feels<br><span>like play</span> 🎉</h1>
+      <p class="hero-sub">Teachers host a live quiz, kids join instantly with a 6&#8209;digit code, no accounts needed.</p>
+      <div class="role-row">
+        <div class="role-card" id="goPlayer">
+          <div class="role-emoji">🎮</div>
+          <h3>I'm a player</h3>
+          <p>Join a game with a code</p>
+        </div>
+        <div class="role-card" id="goTeacher">
+          <div class="role-emoji">🍎</div>
+          <h3>I'm a teacher</h3>
+          <p>Create and host quizzes</p>
+        </div>
+      </div>
+      <p class="helper-note">Quizzes and games are stored in shared app storage, visible to anyone using this app, so please skip real personal info in names.</p>
+    </div>
+  `;
+}
+
+/* ---------------- TEACHER DASHBOARD ---------------- */
+async function openTeacherDashboard(){
+  App.loading = true; goto('teacherDashboard');
+  App.quizzes = await loadQuizIndex();
+  App.loading = false; render();
+}
+function teacherDashboardHTML(){
+  if(App.loading){ return loadingHTML('Loading your quizzes...'); }
+  const list = App.quizzes.length ? `<div class="quiz-list">${App.quizzes.map(q => `
+      <div class="quiz-card">
+        <div class="stripe"></div>
+        <h3>${esc(q.title)}</h3>
+        <div class="meta">${q.count} question${q.count===1?'':'s'}</div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn btn-primary" data-host="${q.id}" style="flex:1;">Host game</button>
+          <button class="btn btn-ghost" data-edit="${q.id}">Edit</button>
+        </div>
+      </div>`).join('')}</div>`
+    : `<div class="card" style="text-align:center;"><p style="font-weight:700;color:var(--ink-soft);">No quizzes yet. Create your first one to get started!</p></div>`;
+  return `
+    <div class="top-row">
+      <h2 style="margin:0;">My quizzes</h2>
+      <button class="btn btn-primary" id="newQuiz">+ New quiz</button>
+    </div>
+    ${list}
+  `;
+}
+
+/* ---------------- QUIZ EDITOR ---------------- */
+function newQuizDraft(){
+  return {id:'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:'', questions:[]};
+}
+function quizEditorHTML(){
+  const quiz = App.editingQuiz;
+  const qList = quiz.questions.map((q,i) => `
+    <div class="qbox">
+      <div class="qbox-head">
+        <strong>Q${i+1}. ${esc(q.text)}</strong>
+        <button class="icon-btn" data-del-q="${i}">Remove</button>
+      </div>
+      <div style="font-size:14px;color:var(--ink-soft);">
+        ${q.options.map((o,j)=>`<div>${j===q.correct?'✅':'▫️'} ${esc(o)}</div>`).join('')}
+      </div>
+    </div>`).join('');
+  return `
+    <div class="top-row">
+      <h2 style="margin:0;">${quiz.savedOnce ? 'Edit quiz' : 'New quiz'}</h2>
+      <button class="small-link" id="backToDash">← Back to quizzes</button>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>Quiz title</label>
+        <input type="text" id="quizTitle" placeholder="e.g. Spelling Bee Grade 4" value="${esc(quiz.title)}">
+      </div>
+      <div id="errBox" class="err"></div>
+      <h3 style="margin:20px 0 10px;">Questions (${quiz.questions.length})</h3>
+      ${qList || '<p style="color:var(--ink-soft);font-weight:600;">No questions added yet.</p>'}
+
+      <div class="qbox" style="border-style:dashed;">
+        <div class="field"><label>Question text</label><input type="text" id="newQText" placeholder="e.g. What is the correct spelling?"></div>
+        <div class="opt-row"><input type="radio" name="correctOpt" value="0" checked><input type="text" id="opt0" placeholder="Answer option 1 (correct one selected)"></div>
+        <div class="opt-row"><input type="radio" name="correctOpt" value="1"><input type="text" id="opt1" placeholder="Answer option 2"></div>
+        <div class="opt-row"><input type="radio" name="correctOpt" value="2"><input type="text" id="opt2" placeholder="Answer option 3 (optional)"></div>
+        <div class="opt-row"><input type="radio" name="correctOpt" value="3"><input type="text" id="opt3" placeholder="Answer option 4 (optional)"></div>
+        <button class="btn btn-yellow" id="addQuestion">+ Add question</button>
+      </div>
+
+      <button class="btn btn-green btn-lg btn-block" id="saveQuiz" style="margin-top:10px;">Save quiz</button>
+    </div>
+  `;
+}
+
+/* ---------------- HOST LOBBY ---------------- */
+async function startHosting(quizId){
+  App.loading = true; goto('hostLobby');
+  App.quizForGame = await loadQuiz(quizId);
+  App.gameCode = await createGame(quizId);
+  App.players = [];
+  App.loading = false;
+  render();
+  App.pollTimer = setInterval(async ()=>{
+    App.players = await listPlayers(App.gameCode);
+    if(App.screen==='hostLobby') renderPlayersOnly();
+  }, 1500);
+}
+function renderPlayersOnly(){
+  const box = document.getElementById('playerListBox');
+  if(box) box.innerHTML = playerChipsHTML();
+}
+function playerChipsHTML(){
+  if(!App.players.length) return '<p class="helper-note">Waiting for players to join...</p>';
+  return `<div class="player-list">${App.players.map(p=>`<div class="player-chip">🙂 ${esc(p.name)}</div>`).join('')}</div>`;
+}
+function hostLobbyHTML(){
+  if(App.loading){ return loadingHTML('Setting up your game...'); }
+  const code = App.gameCode.split('');
+  return `
+    <div class="center-screen">
+      <span class="badge orange">${esc(App.quizForGame.title)}</span>
+      <h2 style="margin:0;">Join at this code</h2>
+      <div class="code-display">${code.map(c=>`<div class="digit">${c}</div>`).join('')}</div>
+      <div class="stat-card"><div class="num">${App.players.length}</div><div class="lbl">Players joined</div></div>
+      <div id="playerListBox">${playerChipsHTML()}</div>
+      <button class="btn btn-primary btn-lg" id="startGame" ${App.players.length? '' : 'disabled'}>Start game</button>
+      <button class="small-link" id="cancelHost">Cancel and go back</button>
+    </div>
+  `;
+}
+
+/* ---------------- HOST PLAY ---------------- */
+async function hostAdvance(){
+  const q = App.game.currentQ + 1;
+  if(q >= App.quizForGame.questions.length){
+    await setGame(App.gameCode, {status:'ended'});
+  } else {
+    await setGame(App.gameCode, {status:'question', currentQ:q, questionStartedAt:Date.now()});
+  }
+  App.game = await getGame(App.gameCode);
+  render();
+  hostPollLoop();
+}
+function hostPollLoop(){
+  stopPolling();
+  App.pollTimer = setInterval(async ()=>{
+    if(App.screen!=='hostPlay'){ return; }
+    App.players = await listPlayers(App.gameCode);
+    const box = document.getElementById('hostAnswerCount');
+    if(box && App.game.status==='question'){
+      const n = await countAnswers(App.gameCode, App.game.currentQ);
+      box.textContent = n + ' / ' + App.players.length + ' answered';
+    }
+  }, 1500);
+}
+function hostPlayHTML(){
+  const quiz = App.quizForGame;
+  const qi = App.game.currentQ;
+  const q = quiz.questions[qi];
+  const isLast = qi >= quiz.questions.length - 1;
+  return `
+    <div class="center-screen">
+      <span class="progress-pill">Question ${qi+1} / ${quiz.questions.length}</span>
+      <div class="question-banner" style="width:100%;max-width:640px;">
+        <p class="question-text">${esc(q.text)}</p>
+      </div>
+      <div id="hostAnswerCount" class="badge">0 / ${App.players.length} answered</div>
+      <div class="answer-grid" style="max-width:640px;width:100%;">
+        ${q.options.map((o,i)=>`<div class="answer-card ac-${i}">${esc(o)}</div>`).join('')}
+      </div>
+      <button class="btn btn-primary btn-lg" id="hostNext">${isLast ? 'Show final results' : 'Next question'}</button>
+    </div>
+  `;
+}
+
+/* ---------------- HOST RESULTS ---------------- */
+async function hostShowResults(){
+  App.players = await listPlayers(App.gameCode);
+  goto('hostResults');
+}
+function hostResultsHTML(){
+  return `
+    <div class="center-screen">
+      <h1 class="hero-title">🏆 Final scores</h1>
+      ${leaderboardHTML(App.players)}
+      <button class="btn btn-primary btn-lg" id="backToDashFromResults">Back to my quizzes</button>
+    </div>
+  `;
+}
+function leaderboardHTML(players){
+  if(!players.length) return '<p class="helper-note">No players joined this game.</p>';
+  const medals = ['gold','silver','bronze'];
+  return `<ul class="leaderboard">${players.map((p,i)=>`
+    <li class="lb-row">
+      <div class="lb-rank ${medals[i]||''}">${i+1}</div>
+      <div class="lb-name">${esc(p.name)}</div>
+      <div class="lb-score">${p.score||0}</div>
+    </li>`).join('')}</ul>`;
+}
+
+/* ---------------- PLAYER JOIN ---------------- */
+function playerJoinHTML(){
+  return `
+    <div class="center-screen">
+      <h1 class="hero-title">Enter your <span>game code</span></h1>
+      <div class="code-tiles">
+        ${[0,1,2,3,4,5].map(i=>`<input type="text" maxlength="1" inputmode="numeric" class="codeDigit" data-i="${i}">`).join('')}
+      </div>
+      <div class="field" style="width:260px;">
+        <label>Your nickname</label>
+        <input type="text" id="nickname" placeholder="e.g. Sunny Tiger" maxlength="18">
+      </div>
+      <div id="joinErr" class="err"></div>
+      <button class="btn btn-primary btn-lg" id="joinBtn">Join game</button>
+    </div>
+  `;
+}
+
+/* ---------------- PLAYER LOBBY ---------------- */
+function playerLobbyHTML(){
+  return `
+    <div class="center-screen">
+      <div class="spinner"></div>
+      <h2>You're in, ${esc(App.playerName)}! 🎉</h2>
+      <p class="helper-note">Waiting for the host to start the game...</p>
+      <div id="playerListBox2">${playerChipsHTML()}</div>
+    </div>
+  `;
+}
+
+/* ---------------- PLAYER PLAY ---------------- */
+function playerPlayHTML(){
+  const quiz = App.quizForGame;
+  const qi = App.game.currentQ;
+  const q = quiz.questions[qi];
+  const answered = App.answeredThisQ;
+  return `
+    <div class="center-screen">
+      <span class="progress-pill">Question ${qi+1} / ${quiz.questions.length}</span>
+      <div class="question-banner" style="width:100%;max-width:600px;">
+        <p class="question-text">${esc(q.text)}</p>
+        <div class="timer-bar-track"><div class="timer-bar-fill" id="timerFill" style="width:100%;"></div></div>
+      </div>
+      <div class="answer-grid" style="max-width:600px;width:100%;">
+        ${q.options.map((o,i)=>`<button class="answer-card ac-${i}" data-opt="${i}" ${answered?'disabled':''}>${esc(o)}</button>`).join('')}
+      </div>
+      ${answered ? '<p class="helper-note">Answer locked in, waiting for the host to move on...</p>' : ''}
+    </div>
+  `;
+}
+
+/* ---------------- PLAYER RESULTS ---------------- */
+function playerResultsHTML(){
+  const me = App.players.find(p=>p.id === 'player-'+App.gameCode+'-'+App.playerId) || {score:0};
+  const rank = App.players.findIndex(p=>p.id === 'player-'+App.gameCode+'-'+App.playerId) + 1;
+  return `
+    <div class="center-screen">
+      <h1 class="hero-title">🎉 Great job!</h1>
+      <div class="stat-row">
+        <div class="stat-card"><div class="num">${me.score||0}</div><div class="lbl">Points</div></div>
+        <div class="stat-card"><div class="num">#${rank||'-'}</div><div class="lbl">Rank</div></div>
+      </div>
+      ${leaderboardHTML(App.players)}
+      <button class="btn btn-primary btn-lg" id="playAgain">Join another game</button>
+    </div>
+  `;
+}
+
+/* ---------------- shared helpers ---------------- */
+function loadingHTML(msg){
+  return `<div class="center-screen"><div class="spinner"></div><p class="helper-note">${esc(msg)}</p></div>`;
+}
+
+/* ---------------- events ---------------- */
+function bindEvents(){
+  const on = (id, evt, fn) => { const e = document.getElementById(id); if(e) e.addEventListener(evt, fn); };
+
+  on('logoHome', 'click', ()=>{ App.gameCode=null; App.game=null; goto('landing'); });
+  on('goPlayer', 'click', ()=> goto('playerJoin'));
+  on('goTeacher', 'click', openTeacherDashboard);
+
+  /* teacher dashboard */
+  on('newQuiz', 'click', ()=>{ App.editingQuiz = newQuizDraft(); goto('quizEditor'); });
+  document.querySelectorAll('[data-host]').forEach(b=>b.addEventListener('click', ()=> startHosting(b.dataset.host)));
+  document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
+    const q = await loadQuiz(b.dataset.edit); q.savedOnce = true; App.editingQuiz = q; goto('quizEditor');
+  }));
+
+  /* quiz editor */
+  on('backToDash', 'click', openTeacherDashboard);
+  on('addQuestion', 'click', ()=>{
+    const text = document.getElementById('newQText').value.trim();
+    const opts = [0,1,2,3].map(i=>document.getElementById('opt'+i).value.trim()).filter(v=>v);
+    const correctRadio = document.querySelector('input[name=correctOpt]:checked');
+    const correctIdx = correctRadio ? parseInt(correctRadio.value,10) : 0;
+    const errBox = document.getElementById('errBox');
+    if(!text || opts.length < 2){ errBox.textContent = 'Add a question and at least 2 answer options.'; return; }
+    if(correctIdx >= opts.length){ errBox.textContent = 'Pick a correct answer among the options you filled in.'; return; }
+    errBox.textContent = '';
+    App.editingQuiz.questions.push({text, options:opts, correct:correctIdx});
+    render();
+  });
+  document.querySelectorAll('[data-del-q]').forEach(b=>b.addEventListener('click', ()=>{
+    App.editingQuiz.questions.splice(parseInt(b.dataset.delQ,10),1); render();
+  }));
+  on('saveQuiz', 'click', async ()=>{
+    const title = document.getElementById('quizTitle').value.trim();
+    const errBox = document.getElementById('errBox');
+    if(!title){ errBox.textContent = 'Give your quiz a title.'; return; }
+    if(!App.editingQuiz.questions.length){ errBox.textContent = 'Add at least one question before saving.'; return; }
+    App.editingQuiz.title = title;
+    if(App.editingQuiz.savedOnce){ await updateQuiz(App.editingQuiz); } else { App.editingQuiz.savedOnce = true; await saveNewQuiz(App.editingQuiz); }
+    openTeacherDashboard();
+  });
+
+  /* host lobby */
+  on('cancelHost', 'click', openTeacherDashboard);
+  on('startGame', 'click', async ()=>{
+    App.game = await setGame(App.gameCode, {status:'question', currentQ:0, questionStartedAt:Date.now()});
+    goto('hostPlay');
+    hostPollLoop();
+  });
+
+  /* host play */
+  on('hostNext', 'click', async ()=>{
+    const wasLast = App.game.currentQ >= App.quizForGame.questions.length - 1;
+    await hostAdvance();
+    if(wasLast){ await hostShowResults(); }
+  });
+  on('backToDashFromResults', 'click', openTeacherDashboard);
+
+  /* player join code tiles */
+  const digits = document.querySelectorAll('.codeDigit');
+  digits.forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      inp.value = inp.value.replace(/[^0-9]/g,'').slice(0,1);
+      if(inp.value){ const next = document.querySelector(`.codeDigit[data-i="${parseInt(inp.dataset.i,10)+1}"]`); if(next) next.focus(); }
+    });
+    inp.addEventListener('keydown', (e)=>{
+      if(e.key==='Backspace' && !inp.value){ const prev = document.querySelector(`.codeDigit[data-i="${parseInt(inp.dataset.i,10)-1}"]`); if(prev) prev.focus(); }
+    });
+  });
+  on('joinBtn', 'click', doJoinGame);
+
+  /* player play answer buttons */
+  document.querySelectorAll('.answer-card[data-opt]').forEach(b=>b.addEventListener('click', ()=> playerAnswer(parseInt(b.dataset.opt,10))));
+
+  /* player results */
+  on('playAgain', 'click', ()=>{ App.gameCode=null; App.game=null; App.players=[]; App.playerName=''; goto('playerJoin'); });
+
+  startTimerVisualsIfNeeded();
+}
+
+/* ---------------- join flow ---------------- */
+async function doJoinGame(){
+  const code = Array.from(document.querySelectorAll('.codeDigit')).map(i=>i.value).join('');
+  const name = document.getElementById('nickname').value.trim();
+  const errBox = document.getElementById('joinErr');
+  if(code.length !== 6){ errBox.textContent = 'Enter the full 6-digit code.'; return; }
+  if(!name){ errBox.textContent = 'Pick a nickname first.'; return; }
+  errBox.textContent = '';
+  const game = await getGame(code);
+  if(!game){ errBox.textContent = "That code doesn't match a game right now."; return; }
+  App.gameCode = code;
+  App.playerName = name;
+  const quiz = await loadQuiz(game.quizId);
+  App.quizForGame = quiz;
+  App.game = game;
+  await joinGame(code, App.playerId, name);
+  App.players = await listPlayers(code);
+  goto('playerLobby');
+  App.pollTimer = setInterval(playerPollTick, 1200);
+}
+
+async function playerPollTick(){
+  if(!['playerLobby','playerPlay'].includes(App.screen)) return;
+  const game = await getGame(App.gameCode);
+  if(!game) return;
+  App.players = await listPlayers(App.gameCode);
+  if(App.screen==='playerLobby'){
+    const box = document.getElementById('playerListBox2');
+    if(box) box.innerHTML = playerChipsHTML();
+    if(game.status==='question'){
+      App.game = game; App.answeredThisQ = false;
+      goto('playerPlay'); startTimerVisualsIfNeeded();
+      App.pollTimer = setInterval(playerPollTick, 1200);
+    }
+  } else if(App.screen==='playerPlay'){
+    if(game.currentQ !== App.game.currentQ || game.status !== App.game.status){
+      App.game = game;
+      if(game.status==='ended'){
+        goto('playerResults');
+      } else if(game.status==='question'){
+        App.answeredThisQ = false;
+        render();
+      }
+    }
+  }
+}
+
+async function playerAnswer(optIndex){
+  if(App.answeredThisQ) return;
+  App.answeredThisQ = true;
+  const q = App.quizForGame.questions[App.game.currentQ];
+  const isCorrect = optIndex === q.correct;
+  await submitAnswer(App.gameCode, App.game.currentQ, App.playerId, optIndex);
+  const cur = await sGet('player-'+App.gameCode+'-'+App.playerId) || {name:App.playerName, score:0, streak:0};
+  const newStreak = isCorrect ? (cur.streak||0) + 1 : 0;
+  const speedBonus = App.timeLeft && App.timeLeft > 0 ? Math.round((App.timeLeft / QUESTION_SECONDS) * 400) : 0;
+  const gained = isCorrect ? (600 + speedBonus + Math.min(newStreak * 40, 200)) : 0;
+  await updatePlayerScore(App.gameCode, App.playerId, {score:(cur.score||0)+gained, streak:newStreak, name:App.playerName});
+
+  document.querySelectorAll('.answer-card[data-opt]').forEach(b=>{
+    b.disabled = true;
+    const bi = parseInt(b.dataset.opt,10);
+    if(bi === q.correct) b.classList.add('correct');
+    else if(bi === optIndex) b.classList.add('wrong');
+  });
+  const banner = document.createElement('div');
+  banner.className = 'feedback-banner ' + (isCorrect ? 'ok' : 'no');
+  banner.innerHTML = isCorrect ? `✓ Correct! +${gained} pts ${newStreak>1 ? `<span class="streak-pop">🔥 ${newStreak} streak</span>` : ''}` : '✗ Not quite, keep going!';
+  document.body.appendChild(banner);
+  setTimeout(()=>{ banner.remove(); }, 1800);
+  render();
+}
+
+function startTimerVisualsIfNeeded(){
+  if(App.screen !== 'playerPlay' || !App.game || App.game.status !== 'question') return;
+  if(App.countdownTimer) clearInterval(App.countdownTimer);
+  const started = App.game.questionStartedAt || Date.now();
+  function tick(){
+    const elapsed = (Date.now() - started) / 1000;
+    App.timeLeft = Math.max(0, QUESTION_SECONDS - elapsed);
+    const fill = document.getElementById('timerFill');
+    if(fill) fill.style.width = Math.max(0, (App.timeLeft / QUESTION_SECONDS) * 100) + '%';
+    if(App.timeLeft <= 0){ clearInterval(App.countdownTimer); App.countdownTimer = null; }
+  }
+  tick();
+  App.countdownTimer = setInterval(tick, 250);
+}
+
+render();
+</script>
+</body>
+</html>
